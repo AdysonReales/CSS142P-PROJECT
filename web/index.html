@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carlo's Bacolod Chicken House Express (CHE) Makati | Queue Simulation Digital Twin</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Three.js and OrbitControls via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Top Bar Header -->
+    <header id="top-bar">
+      <div class="brand-group">
+        <div class="brand-badge">CHE MAKATI</div>
+        <div class="brand-titles">
+          <h1>Carlo's Bacolod Chicken House Express</h1>
+          <p class="subtitle">Savana Commercial Center | Discrete-Event Queue & Multi-Channel Digital Twin</p>
+        </div>
+      </div>
+
+      <!-- Clock & Simulation Time -->
+      <div class="sim-clock-card">
+        <div class="clock-label">PEAK RUSH TIMELINE</div>
+        <div class="clock-value" id="clock-display">11:30 AM <span class="clock-sub">(+0.0 min)</span></div>
+      </div>
+
+      <!-- Scenario Selector Tabs -->
+      <div class="scenario-selector-group">
+        <button class="scenario-btn active" data-scenario="baseline" id="btn-scen-baseline">
+          <span class="scen-code">BASE</span>
+          <span class="scen-name">Shared Counter</span>
+        </button>
+        <button class="scenario-btn" data-scenario="scenario_a" id="btn-scen-a">
+          <span class="scen-code">SCEN A</span>
+          <span class="scen-name">Channel Decoupling</span>
+        </button>
+        <button class="scenario-btn" data-scenario="scenario_b" id="btn-scen-b">
+          <span class="scen-code">SCEN B</span>
+          <span class="scen-name">Floating Expediter</span>
+        </button>
+        <button class="scenario-btn" data-scenario="scenario_c" id="btn-scen-c">
+          <span class="scen-code">SCEN C</span>
+          <span class="scen-name">Dynamic Staffing</span>
+        </button>
+        <button class="scenario-btn" data-scenario="combined" id="btn-scen-combined">
+          <span class="scen-code">BEST</span>
+          <span class="scen-name">Combined Policy</span>
+        </button>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="header-actions">
+        <button class="action-btn" id="btn-open-matrix" title="View Scenario Trade-Off Matrix">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+          Trade-Off Matrix
+        </button>
+        <button class="action-btn" id="btn-open-empirical" title="Inspect Field Data & Fits">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Field Data & Fits
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace (3D Canvas + HUD Overlays) -->
+    <main id="main-viewport">
+      <div id="canvas-container"></div>
+
+      <!-- Scenario Brief Banner (Top of Canvas) -->
+      <div id="scenario-brief-banner">
+        <span class="badge" id="brief-badge">BASELINE</span>
+        <span class="text" id="brief-text">Current single shared-counter queue for dine-in, takeout, and delivery couriers.</span>
+      </div>
+
+      <!-- Camera Perspectives Controller (Top Left) -->
+      <div id="camera-dock">
+        <span class="dock-title">CAMERA VIEW</span>
+        <div class="cam-btn-group">
+          <button class="cam-btn active" data-view="isometric" id="cam-iso">Isometric Twin</button>
+          <button class="cam-btn" data-view="counter" id="cam-counter">Counter & Queue</button>
+          <button class="cam-btn" data-view="grill" id="cam-grill">Grill Station</button>
+          <button class="cam-btn" data-view="dining" id="cam-dining">Dining Hall</button>
+          <button class="cam-btn" data-view="street" id="cam-street">Savana Corridor</button>
+        </div>
+      </div>
+
+      <!-- Live 3D Object Legend (Bottom Left) -->
+      <div id="legend-dock">
+        <div class="legend-header">3D ENTITY LEGEND</div>
+        <div class="legend-items">
+          <div class="legend-item"><span class="color-dot dine-in"></span> Dine-In Patrons</div>
+          <div class="legend-item"><span class="color-dot takeout"></span> Walk-in Takeout</div>
+          <div class="legend-item"><span class="color-dot grab"></span> GrabFood Couriers</div>
+          <div class="legend-item"><span class="color-dot panda"></span> Foodpanda Couriers</div>
+          <div class="legend-item"><span class="color-dot staff"></span> CHE Staff / Grill Master</div>
+          <div class="legend-item"><span class="color-dot expediter"></span> Floating Expediter</div>
+        </div>
+      </div>
+
+      <!-- Right HUD: Operational Telemetry Gauges -->
+      <aside id="telemetry-panel">
+        <div class="panel-header">
+          <h2>OPERATIONAL TELEMETRY</h2>
+          <span class="live-pill">LIVE DES</span>
+        </div>
+
+        <!-- Primary KPI Cards -->
+        <div class="kpi-grid">
+          <!-- Queue Length Lq -->
+          <div class="kpi-card" id="card-lq">
+            <div class="kpi-meta">
+              <span class="kpi-title">CURRENT QUEUE (Lq)</span>
+              <span class="kpi-tag" id="tag-lq">NORMAL</span>
+            </div>
+            <div class="kpi-value-row">
+              <span class="kpi-num" id="val-lq">0</span>
+              <span class="kpi-unit">pax</span>
+            </div>
+            <div class="kpi-bar-track">
+              <div class="kpi-bar-fill" id="bar-lq" style="width: 0%"></div>
+              <div class="kpi-thresh-marker" title="Balking Threshold (8 pax)" style="left: 53.3%"></div>
+            </div>
+            <span class="kpi-sub" id="sub-lq">Peak: 0 pax | Balk Threshold: 8</span>
+          </div>
+
+          <!-- Mean Wait Time Wq -->
+          <div class="kpi-card" id="card-wq">
+            <div class="kpi-meta">
+              <span class="kpi-title">MEAN WAIT TIME (Wq)</span>
+              <span class="kpi-tag">REG. QUEUE</span>
+            </div>
+            <div class="kpi-value-row">
+              <span class="kpi-num" id="val-wq">0.0</span>
+              <span class="kpi-unit">min</span>
+            </div>
+            <div class="kpi-bar-track">
+              <div class="kpi-bar-fill wq-fill" id="bar-wq" style="width: 0%"></div>
+            </div>
+            <span class="kpi-sub" id="sub-wq">P95: 0.0 min</span>
+          </div>
+
+          <!-- Courier Dwell Time -->
+          <div class="kpi-card" id="card-dwell">
+            <div class="kpi-meta">
+              <span class="kpi-title">COURIER DWELL TIME</span>
+              <span class="kpi-tag riders-tag">GRAB / PANDA</span>
+            </div>
+            <div class="kpi-value-row">
+              <span class="kpi-num" id="val-dwell">0.0</span>
+              <span class="kpi-unit">min</span>
+            </div>
+            <div class="kpi-bar-track">
+              <div class="kpi-bar-fill dwell-fill" id="bar-dwell" style="width: 0%"></div>
+            </div>
+            <span class="kpi-sub" id="sub-dwell">Active Couriers: 0</span>
+          </div>
+
+          <!-- Customer Balking / Walkaways -->
+          <div class="kpi-card" id="card-balk">
+            <div class="kpi-meta">
+              <span class="kpi-title">WALKAWAYS / BALKED</span>
+              <span class="kpi-tag alert-tag" id="tag-balk">0.0%</span>
+            </div>
+            <div class="kpi-value-row">
+              <span class="kpi-num" id="val-balk-count">0</span>
+              <span class="kpi-unit">lost</span>
+            </div>
+            <div class="kpi-bar-track">
+              <div class="kpi-bar-fill balk-fill" id="bar-balk" style="width: 0%"></div>
+            </div>
+            <span class="kpi-sub" id="sub-balk">Congestion abandonment</span>
+          </div>
+        </div>
+
+        <!-- Kitchen & Grill Pipeline Status -->
+        <div class="station-status-card">
+          <div class="station-header">
+            <span>CHARCOAL GRILL & KITCHEN PIPELINE</span>
+            <span class="flame-icon">🔥 Sizzling</span>
+          </div>
+          <div class="grill-meter-row">
+            <div class="meter-info">
+              <span class="label">Ready Inasal Buffer</span>
+              <span class="val" id="val-buffer-count">12 / 24 pcs</span>
+            </div>
+            <div class="buffer-bar-track">
+              <div class="buffer-bar-fill" id="bar-buffer" style="width: 50%"></div>
+            </div>
+          </div>
+          <div class="grill-stats-row">
+            <div class="mini-stat">
+              <span class="lbl">Grill Backlog</span>
+              <span class="num" id="val-backlog">0 pcs</span>
+            </div>
+            <div class="mini-stat">
+              <span class="lbl">Grill Utilization</span>
+              <span class="num" id="val-grill-util">0%</span>
+            </div>
+            <div class="mini-stat">
+              <span class="lbl">Dining Tables</span>
+              <span class="num" id="val-tables">0 / 14</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Channel Order Breakdown -->
+        <div class="channel-breakdown-card">
+          <div class="channel-header">CHANNEL THROUGHPUT</div>
+          <div class="channel-pills">
+            <div class="ch-pill dine-in">
+              <span class="ch-name">Dine-In</span>
+              <span class="ch-count" id="count-dinein">0</span>
+            </div>
+            <div class="ch-pill takeout">
+              <span class="ch-name">Takeout</span>
+              <span class="ch-count" id="count-takeout">0</span>
+            </div>
+            <div class="ch-pill courier">
+              <span class="ch-name">Delivery</span>
+              <span class="ch-count" id="count-courier">0</span>
+            </div>
+          </div>
+          <div class="throughput-summary">
+            <span>Completed Orders: <strong id="val-completed-total">0</strong></span>
+            <span>Throughput: <strong id="val-throughput-rate">0.0</strong> / hr</span>
+          </div>
+        </div>
+
+        <!-- Live Event Activity Feed -->
+        <div class="activity-feed-card">
+          <div class="feed-header">LIVE DISCRETE EVENT STREAM</div>
+          <div class="feed-list" id="event-feed">
+            <div class="feed-item system">Simulation initialized for Savana Market CHE.</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Bottom Simulation Playback Controller Bar -->
+      <footer id="playback-bar">
+        <div class="controls-left">
+          <button class="play-btn" id="btn-play-pause">
+            <svg id="icon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="icon-pause" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <span id="play-text">START</span>
+          </button>
+          <button class="ctrl-btn" id="btn-step" title="Advance 1 Minute">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            Step (+1m)
+          </button>
+          <button class="ctrl-btn" id="btn-reset" title="Reset Simulation">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset
+          </button>
+        </div>
+
+        <!-- Timeline Progress Scrubber -->
+        <div class="timeline-container">
+          <div class="timeline-labels">
+            <span>11:30 AM (Start)</span>
+            <span id="current-sim-time-label">11:30 AM</span>
+            <span>1:30 PM (End of Rush)</span>
+          </div>
+          <div class="timeline-track" id="timeline-track">
+            <div class="timeline-progress" id="timeline-progress" style="width: 0%"></div>
+            <div class="timeline-handle" id="timeline-handle" style="left: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Simulation Speed Buttons -->
+        <div class="controls-right">
+          <span class="speed-label">WARP:</span>
+          <div class="speed-btn-group">
+            <button class="speed-btn active" data-speed="1">1x</button>
+            <button class="speed-btn" data-speed="2">2x</button>
+            <button class="speed-btn" data-speed="5">5x</button>
+            <button class="speed-btn" data-speed="10">10x</button>
+            <button class="speed-btn" data-speed="20">20x</button>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Modal: Scenario Trade-Off Matrix -->
+    <div class="modal-overlay hidden" id="matrix-modal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <h2>Scenario Trade-Off & Optimization Matrix</h2>
+            <p>Monte Carlo replication results (20 runs per scenario) comparing queue dynamics, dwell times, and utilization.</p>
+          </div>
+          <button class="modal-close-btn" id="btn-close-matrix">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="data-table" id="tradeoff-table">
+              <thead>
+                <tr>
+                  <th>Scenario</th>
+                  <th>Mean Wq (min)</th>
+                  <th>95% CI</th>
+                  <th>Mean Lq</th>
+                  <th>Max Lq</th>
+                  <th>Courier Dwell</th>
+                  <th>Balking Rate</th>
+                  <th>Throughput</th>
+                  <th>Cashier Util</th>
+                  <th>Assembly Util</th>
+                </tr>
+              </thead>
+              <tbody id="tradeoff-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="matrix-insights-card">
+            <h3>Key Operational Insights</h3>
+            <ul>
+              <li><strong>Scenario A (Decoupling):</strong> Cuts queue wait time by <strong>88%</strong> (12.49m &rarr; 1.50m) and reduces balking by more than half by separating courier handoffs.</li>
+              <li><strong>Scenario B (Floating Expediter):</strong> Pre-ordering in line lowers customer wait by <strong>60%</strong> with zero physical construction needed.</li>
+              <li><strong>Scenario C (Dynamic Staffing):</strong> Reallocating 1 kitchen prep worker increases peak throughput by <strong>+72%</strong> (7.35 &rarr; 12.67 orders/hr).</li>
+              <li><strong>Combined Policy:</strong> Achieves lowest customer wait (<strong>1.43 mins</strong>) and near-zero balking (<strong>3.61%</strong>), resolving the Savana Market corridor bottleneck completely.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Empirical Data & Distribution Fitting -->
+    <div class="modal-overlay hidden" id="empirical-modal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <h2>Empirical Field Observations & Distribution Fitting</h2>
+            <p>Stopwatch field observations (601 records) at Savana Market fitted with SciPy statistical distributions.</p>
+          </div>
+          <button class="modal-close-btn" id="btn-close-empirical">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="fits-grid" id="fits-container">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="simulation_engine.js"></script>
+  <script src="scene_3d.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
