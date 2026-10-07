@@ -146,33 +146,97 @@ CSS142P-PROJECT/
 
 ---
 
-## 6. Getting Started & How to Run
+## 6. Getting Started & Setup Guide
 
-### 1. Install Dependencies
+### Prerequisites
+- **Python 3.9 or higher** (Python 3.10+ recommended)
+- **Git**
+- **Modern Web Browser** (Google Chrome, Microsoft Edge, Mozilla Firefox, or Brave with WebGL enabled)
+
+---
+
+### Step-by-Step Installation
+
+#### 1. Clone the Repository
+```bash
+git clone https://github.com/AdysonReales/CSS142P-PROJECT.git
+cd CSS142P-PROJECT
+```
+
+#### 2. Create and Activate a Virtual Environment
+
+**Windows (PowerShell):**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+*(If you encounter an execution policy restriction in PowerShell, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first).*
+
+**Windows (Command Prompt):**
+```cmd
+python -m venv venv
+venv\Scripts\activate.bat
+```
+
+**macOS / Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+#### 3. Install Python Dependencies
 ```bash
 pip install -r requirements.txt
 ```
+*Core packages installed:* `simpy>=4.1.0`, `numpy>=1.24.0`, `scipy>=1.10.0`, `pandas>=2.0.0`, `matplotlib>=3.7.0`.
 
-### 2. Launch the 3D Digital Twin Visualizer
-To launch the interactive 3D WebGL simulation in your default browser:
+---
+
+### Running the Project
+
+#### A. Launch the Interactive 3D Digital Twin Visualizer (Recommended)
+Launch the local web server and open the 3D WebGL twin in your browser:
 ```bash
 python main.py --ui
 ```
-*Access in browser at:* `http://localhost:8080`
+- **Local URL:** [http://localhost:8080](http://localhost:8080)
+- **Custom Port:** If port `8080` is in use on your machine, specify a different port:
+  ```bash
+  python main.py --ui --port 8085
+  ```
+- *No Node.js or npm build step is required* — Three.js and OrbitControls are loaded via CDN, running with vanilla CSS and ES6 client-side execution.
 
-### 3. Run Monte Carlo Scenario Optimization
-To run the full multi-scenario simulation across 15+ replications and print the Trade-off Matrix:
+#### B. Run Full Monte Carlo Scenario Optimization (CLI)
+Executes Monte Carlo simulation replications (default 15 runs per scenario) and prints the comprehensive Scenario Trade-Off Matrix with 95% confidence intervals:
 ```bash
 python main.py
 ```
+To customize replication count:
+```bash
+python main.py --replications 25
+```
 
-### 4. Re-fit Empirical Field Distributions
-To re-fit the empirical observations from `data/raw/che_peak_observations.csv`:
+#### C. Re-fit Empirical Field Distributions
+Fits continuous distributions (Gamma, Exponential, Triangular, Lognormal) to the 601 field observation records from `data/raw/che_peak_observations.csv` using SciPy and outputs Kolmogorov-Smirnov statistics:
 ```bash
 python main.py --fit
 ```
 
-### 5. Run Unit Tests
+#### D. Export 3D Simulation Event Trajectories
+Generates granular JSON event stream logs for offline analysis or playback recordings:
+```bash
+python main.py --export
+```
+
+#### E. Run Unit & Model Tests
+Runs all unit tests verifying the SimPy state machine, customer metrics, and statistical distribution samplers:
 ```bash
 python -m unittest discover tests
 ```
+
+---
+
+## 7. License & Credits
+
+This project was developed for **CSS142P (Modeling & Simulation)**.  
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
