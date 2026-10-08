@@ -3,359 +3,703 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Carlo's Bacolod Chicken House Express (CHE) Makati | Queue Simulation Digital Twin</title>
+  <title>Carlo's Bacolod Chicken House Express (CHE) Makati | Discrete-Event Queue & Systems Simulation</title>
   
-  <!-- Fonts -->
+  <!-- Modern Clean Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   
-  <!-- Three.js and OrbitControls via CDN -->
+  <!-- Three.js, OrbitControls, and Chart.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   
-  <!-- Custom Styling -->
+  <!-- Spreadsheet Reader for XLSX / CSV in Browser -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="app-container">
-    <!-- Top Bar Header -->
-    <header id="top-bar">
-      <div class="brand-group">
-        <div class="brand-badge">CHE MAKATI</div>
-        <div class="brand-titles">
-          <h1>Carlo's Bacolod Chicken House Express</h1>
-          <p class="subtitle">Savana Commercial Center | Discrete-Event Queue & Multi-Channel Digital Twin</p>
+  <div id="app-root">
+    <!-- Top Primary Navigation Bar -->
+    <header id="app-header">
+      <div class="header-left">
+        <div class="brand-crest">CHE</div>
+        <div class="brand-text">
+          <h1>Carlo's Bacolod Chicken House Express <span class="location-tag">Makati (Savana Market)</span></h1>
+          <p class="subtitle">Operations Research & Discrete-Event Systems Simulation Model | Peak Lunch (11:30 AM – 1:30 PM)</p>
         </div>
       </div>
 
-      <!-- Clock & Simulation Time -->
-      <div class="sim-clock-card">
-        <div class="clock-label">PEAK RUSH TIMELINE</div>
-        <div class="clock-value" id="clock-display">11:30 AM <span class="clock-sub">(+0.0 min)</span></div>
-      </div>
-
-      <!-- Scenario Selector Tabs -->
-      <div class="scenario-selector-group">
-        <button class="scenario-btn active" data-scenario="baseline" id="btn-scen-baseline">
-          <span class="scen-code">BASE</span>
-          <span class="scen-name">Shared Counter</span>
+      <!-- Main Navigation Tabs -->
+      <nav class="view-tabs" id="view-tabs">
+        <button class="tab-btn active" data-tab="tab-twin" id="btn-tab-twin">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          3D Digital Twin
         </button>
-        <button class="scenario-btn" data-scenario="scenario_a" id="btn-scen-a">
-          <span class="scen-code">SCEN A</span>
-          <span class="scen-name">Channel Decoupling</span>
+        <button class="tab-btn" data-tab="tab-analytics" id="btn-tab-analytics">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Simulation Analytics
         </button>
-        <button class="scenario-btn" data-scenario="scenario_b" id="btn-scen-b">
-          <span class="scen-code">SCEN B</span>
-          <span class="scen-name">Floating Expediter</span>
-        </button>
-        <button class="scenario-btn" data-scenario="scenario_c" id="btn-scen-c">
-          <span class="scen-code">SCEN C</span>
-          <span class="scen-name">Dynamic Staffing</span>
-        </button>
-        <button class="scenario-btn" data-scenario="combined" id="btn-scen-combined">
-          <span class="scen-code">BEST</span>
-          <span class="scen-name">Combined Policy</span>
-        </button>
-      </div>
-
-      <!-- Quick Action Buttons -->
-      <div class="header-actions">
-        <button class="action-btn" id="btn-open-matrix" title="View Scenario Trade-Off Matrix">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
-          Trade-Off Matrix
-        </button>
-        <button class="action-btn" id="btn-open-empirical" title="Inspect Field Data & Fits">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <button class="tab-btn" data-tab="tab-data" id="btn-tab-data">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
           Field Data & Fits
         </button>
+        <button class="tab-btn" data-tab="tab-matrix" id="btn-tab-matrix">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+          Scenario Matrix
+        </button>
+        <button class="tab-btn" data-tab="tab-methodology" id="btn-tab-methodology">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Methodology & Validation
+        </button>
+      </nav>
+
+      <!-- Simulated Clock & Rush Status -->
+      <div class="header-right">
+        <div class="clock-badge">
+          <span class="clock-label">SIM CLOCK</span>
+          <span class="clock-time" id="clock-display">11:30 AM</span>
+          <span class="clock-elapsed" id="clock-elapsed">(+0.0m)</span>
+        </div>
       </div>
     </header>
 
-    <!-- Main Workspace (3D Canvas + HUD Overlays) -->
-    <main id="main-viewport">
-      <div id="canvas-container"></div>
-
-      <!-- Scenario Brief Banner (Top of Canvas) -->
-      <div id="scenario-brief-banner">
-        <span class="badge" id="brief-badge">BASELINE</span>
-        <span class="text" id="brief-text">Current single shared-counter queue for dine-in, takeout, and delivery couriers.</span>
+    <!-- Sub-Header: Scenario Selection Bar -->
+    <div id="scenario-bar">
+      <div class="scenario-label">OPERATIONAL POLICY:</div>
+      <div class="scenario-pills" id="scenario-selector">
+        <button class="scenario-pill active" data-scenario="baseline" id="pill-baseline">
+          <span class="pill-id">BASELINE</span>
+          <span class="pill-name">Shared Counter</span>
+        </button>
+        <button class="scenario-pill" data-scenario="scenario_a" id="pill-scen-a">
+          <span class="pill-id">SCENARIO A</span>
+          <span class="pill-name">Channel Decoupling</span>
+        </button>
+        <button class="scenario-pill" data-scenario="scenario_b" id="pill-scen-b">
+          <span class="pill-id">SCENARIO B</span>
+          <span class="pill-name">Floating Expediter</span>
+        </button>
+        <button class="scenario-pill" data-scenario="scenario_c" id="pill-scen-c">
+          <span class="pill-id">SCENARIO C</span>
+          <span class="pill-name">Dynamic Staffing</span>
+        </button>
+        <button class="scenario-pill" data-scenario="combined" id="pill-scen-combined">
+          <span class="pill-id">COMBINED</span>
+          <span class="pill-name">Exploratory Policy</span>
+        </button>
       </div>
-
-      <!-- Camera Perspectives Controller (Top Left) -->
-      <div id="camera-dock">
-        <span class="dock-title">CAMERA VIEW</span>
-        <div class="cam-btn-group">
-          <button class="cam-btn active" data-view="isometric" id="cam-iso">Isometric Twin</button>
-          <button class="cam-btn" data-view="counter" id="cam-counter">Counter & Queue</button>
-          <button class="cam-btn" data-view="grill" id="cam-grill">Grill Station</button>
-          <button class="cam-btn" data-view="dining" id="cam-dining">Dining Hall</button>
-          <button class="cam-btn" data-view="street" id="cam-street">Savana Corridor</button>
-        </div>
+      <div class="scenario-desc" id="active-scenario-desc">
+        Current single shared-counter queue for dine-in, takeout, and delivery couriers.
       </div>
+    </div>
 
-      <!-- Live 3D Object Legend (Bottom Left) -->
-      <div id="legend-dock">
-        <div class="legend-header">3D ENTITY LEGEND</div>
-        <div class="legend-items">
-          <div class="legend-item"><span class="color-dot dine-in"></span> Dine-In Patrons</div>
-          <div class="legend-item"><span class="color-dot takeout"></span> Walk-in Takeout</div>
-          <div class="legend-item"><span class="color-dot grab"></span> GrabFood Couriers</div>
-          <div class="legend-item"><span class="color-dot panda"></span> Foodpanda Couriers</div>
-          <div class="legend-item"><span class="color-dot staff"></span> CHE Staff / Grill Master</div>
-          <div class="legend-item"><span class="color-dot expediter"></span> Floating Expediter</div>
-        </div>
-      </div>
+    <!-- MAIN CONTENT VIEWPORTS -->
+    <main id="main-content">
+      <!-- VIEW 1: 3D DIGITAL TWIN -->
+      <section class="view-panel active" id="tab-twin">
+        <div class="viewport-3d-layout">
+          <!-- 3D Canvas Container -->
+          <div class="canvas-wrapper">
+            <div id="canvas-container"></div>
 
-      <!-- Right HUD: Operational Telemetry Gauges -->
-      <aside id="telemetry-panel">
-        <div class="panel-header">
-          <h2>OPERATIONAL TELEMETRY</h2>
-          <span class="live-pill">LIVE DES</span>
-        </div>
+            <!-- Top Camera Controls Bar -->
+            <div class="camera-toolbar">
+              <span class="toolbar-label">CAMERA PRESETS:</span>
+              <button class="cam-btn" data-cam="floor_plan" id="cam-plan" title="Top-Down Orthographic Floor Plan View matching reference schematic">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                Floor Plan (Top-Down)
+              </button>
+              <button class="cam-btn active" data-cam="isometric" id="cam-iso">Isometric 3D</button>
+              <button class="cam-btn" data-cam="counter" id="cam-counter">Cashier & Queue</button>
+              <button class="cam-btn" data-cam="kitchen" id="cam-kitchen">Inasal Grill & Kitchen</button>
+              <button class="cam-btn" data-cam="dining_left" id="cam-dining-left">Left Dining Room (6 tbl)</button>
+              <button class="cam-btn" data-cam="dining_right" id="cam-dining-right">Right Dining Hall (6 tbl)</button>
+            </div>
 
-        <!-- Primary KPI Cards -->
-        <div class="kpi-grid">
-          <!-- Queue Length Lq -->
-          <div class="kpi-card" id="card-lq">
-            <div class="kpi-meta">
-              <span class="kpi-title">CURRENT QUEUE (Lq)</span>
-              <span class="kpi-tag" id="tag-lq">NORMAL</span>
+            <!-- 3D Entities & Color Mapping Legend -->
+            <div class="scene-legend">
+              <div class="legend-title">ENTITIES & ZONES</div>
+              <div class="legend-row"><span class="swatch dine-in"></span> Dine-In Patrons (Blue)</div>
+              <div class="legend-row"><span class="swatch takeout"></span> Takeout (Orange)</div>
+              <div class="legend-row"><span class="swatch grab"></span> GrabFood (Emerald)</div>
+              <div class="legend-row"><span class="swatch panda"></span> Foodpanda (Magenta)</div>
+              <div class="legend-row"><span class="swatch staff"></span> Staff & Grill Master</div>
+              <div class="legend-row"><span class="swatch expediter"></span> Floating Expediter (Gold)</div>
+              <div class="legend-row"><span class="swatch threshold"></span> Balk Threshold Line</div>
             </div>
-            <div class="kpi-value-row">
-              <span class="kpi-num" id="val-lq">0</span>
-              <span class="kpi-unit">pax</span>
-            </div>
-            <div class="kpi-bar-track">
-              <div class="kpi-bar-fill" id="bar-lq" style="width: 0%"></div>
-              <div class="kpi-thresh-marker" title="Balking Threshold (8 pax)" style="left: 53.3%"></div>
-            </div>
-            <span class="kpi-sub" id="sub-lq">Peak: 0 pax | Balk Threshold: 8</span>
           </div>
 
-          <!-- Mean Wait Time Wq -->
-          <div class="kpi-card" id="card-wq">
-            <div class="kpi-meta">
-              <span class="kpi-title">MEAN WAIT TIME (Wq)</span>
-              <span class="kpi-tag">REG. QUEUE</span>
+          <!-- Right Telemetry & Stream HUD -->
+          <aside class="telemetry-sidebar">
+            <div class="telemetry-header">
+              <h3>SYSTEM TELEMETRY</h3>
+              <span class="badge-source">SIMULATED RUN</span>
             </div>
-            <div class="kpi-value-row">
-              <span class="kpi-num" id="val-wq">0.0</span>
-              <span class="kpi-unit">min</span>
-            </div>
-            <div class="kpi-bar-track">
-              <div class="kpi-bar-fill wq-fill" id="bar-wq" style="width: 0%"></div>
-            </div>
-            <span class="kpi-sub" id="sub-wq">P95: 0.0 min</span>
-          </div>
 
-          <!-- Courier Dwell Time -->
-          <div class="kpi-card" id="card-dwell">
-            <div class="kpi-meta">
-              <span class="kpi-title">COURIER DWELL TIME</span>
-              <span class="kpi-tag riders-tag">GRAB / PANDA</span>
-            </div>
-            <div class="kpi-value-row">
-              <span class="kpi-num" id="val-dwell">0.0</span>
-              <span class="kpi-unit">min</span>
-            </div>
-            <div class="kpi-bar-track">
-              <div class="kpi-bar-fill dwell-fill" id="bar-dwell" style="width: 0%"></div>
-            </div>
-            <span class="kpi-sub" id="sub-dwell">Active Couriers: 0</span>
-          </div>
+            <!-- Core Operational KPIs -->
+            <div class="kpi-section">
+              <!-- Queue Length Lq -->
+              <div class="metric-row">
+                <div class="metric-info">
+                  <span class="metric-name" title="Time-weighted average queue length over the observation window">QUEUE LENGTH (Lq)</span>
+                  <span class="metric-unit">Time-weighted pax</span>
+                </div>
+                <div class="metric-val" id="val-lq">0.0</div>
+              </div>
+              <div class="metric-bar-container">
+                <div class="metric-bar-fill" id="bar-lq" style="width: 0%"></div>
+                <div class="metric-marker" style="left: 45%" title="Empirical balking surge threshold (7 pax)"></div>
+              </div>
+              <div class="metric-sub" id="sub-lq">Current: 0 pax | Peak: 0 | Balk Thresh: 7 pax</div>
 
-          <!-- Customer Balking / Walkaways -->
-          <div class="kpi-card" id="card-balk">
-            <div class="kpi-meta">
-              <span class="kpi-title">WALKAWAYS / BALKED</span>
-              <span class="kpi-tag alert-tag" id="tag-balk">0.0%</span>
-            </div>
-            <div class="kpi-value-row">
-              <span class="kpi-num" id="val-balk-count">0</span>
-              <span class="kpi-unit">lost</span>
-            </div>
-            <div class="kpi-bar-track">
-              <div class="kpi-bar-fill balk-fill" id="bar-balk" style="width: 0%"></div>
-            </div>
-            <span class="kpi-sub" id="sub-balk">Congestion abandonment</span>
-          </div>
-        </div>
+              <!-- Cashier Waiting Time Wq -->
+              <div class="metric-row">
+                <div class="metric-info">
+                  <span class="metric-name" title="Elapsed duration from joining queue until service begins at cashier">MEAN CASHIER WAIT (Wq)</span>
+                  <span class="metric-unit">Minutes</span>
+                </div>
+                <div class="metric-val" id="val-wq">0.00</div>
+              </div>
+              <div class="metric-bar-container">
+                <div class="metric-bar-fill wq-fill" id="bar-wq" style="width: 0%"></div>
+              </div>
+              <div class="metric-sub" id="sub-wq">P95 Wait: 0.00m (Cashier Queue)</div>
 
-        <!-- Kitchen & Grill Pipeline Status -->
-        <div class="station-status-card">
-          <div class="station-header">
-            <span>CHARCOAL GRILL & KITCHEN PIPELINE</span>
-            <span class="flame-icon">🔥 Sizzling</span>
-          </div>
-          <div class="grill-meter-row">
-            <div class="meter-info">
-              <span class="label">Ready Inasal Buffer</span>
-              <span class="val" id="val-buffer-count">12 / 24 pcs</span>
-            </div>
-            <div class="buffer-bar-track">
-              <div class="buffer-bar-fill" id="bar-buffer" style="width: 50%"></div>
-            </div>
-          </div>
-          <div class="grill-stats-row">
-            <div class="mini-stat">
-              <span class="lbl">Grill Backlog</span>
-              <span class="num" id="val-backlog">0 pcs</span>
-            </div>
-            <div class="mini-stat">
-              <span class="lbl">Grill Utilization</span>
-              <span class="num" id="val-grill-util">0%</span>
-            </div>
-            <div class="mini-stat">
-              <span class="lbl">Dining Tables</span>
-              <span class="num" id="val-tables">0 / 14</span>
-            </div>
-          </div>
-        </div>
+              <!-- Delivery Courier Dwell Time -->
+              <div class="metric-row">
+                <div class="metric-info">
+                  <span class="metric-name" title="Arrival to departure elapsed duration for GrabFood / Foodpanda delivery couriers">COURIER DWELL TIME</span>
+                  <span class="metric-unit">Minutes</span>
+                </div>
+                <div class="metric-val" id="val-dwell">0.00</div>
+              </div>
+              <div class="metric-sub" id="sub-dwell">Active Couriers: 0 | Completed: 0</div>
 
-        <!-- Multi-Channel Order Breakdown -->
-        <div class="channel-breakdown-card">
-          <div class="channel-header">CHANNEL THROUGHPUT</div>
-          <div class="channel-pills">
-            <div class="ch-pill dine-in">
-              <span class="ch-name">Dine-In</span>
-              <span class="ch-count" id="count-dinein">0</span>
+              <!-- Balking Abandonment Rate -->
+              <div class="metric-row">
+                <div class="metric-info">
+                  <span class="metric-name" title="Percentage of arrivals who left without placing an order due to queue length">WALKAWAY / BALKING</span>
+                  <span class="metric-unit">Abandonment %</span>
+                </div>
+                <div class="metric-val alert-val" id="val-balk">0.0%</div>
+              </div>
+              <div class="metric-sub" id="sub-balk">0 lost arrivals out of 0 total</div>
             </div>
-            <div class="ch-pill takeout">
-              <span class="ch-name">Takeout</span>
-              <span class="ch-count" id="count-takeout">0</span>
+
+            <!-- Charcoal Grill & Kitchen Pipeline -->
+            <div class="station-section">
+              <div class="station-title">
+                <span>INASAL GRILL & PRODUCTION</span>
+                <span class="station-status">🔥 ACTIVE</span>
+              </div>
+              <div class="pipeline-row">
+                <span>Ready Cooked Buffer:</span>
+                <strong id="val-buffer">12 / 24 pcs</strong>
+              </div>
+              <div class="buffer-track">
+                <div class="buffer-fill" id="bar-buffer" style="width: 50%"></div>
+              </div>
+              <div class="station-meta-grid">
+                <div><span>Grill Backlog:</span> <strong id="val-backlog">0 pcs</strong></div>
+                <div><span>Tables Seated:</span> <strong id="val-tables">0 / 12</strong></div>
+              </div>
             </div>
-            <div class="ch-pill courier">
-              <span class="ch-name">Delivery</span>
-              <span class="ch-count" id="count-courier">0</span>
+
+            <!-- Throughput Breakdown by Channel -->
+            <div class="throughput-section">
+              <div class="throughput-title">COMPLETED ORDERS BY CHANNEL</div>
+              <div class="channel-stats">
+                <div class="ch-stat"><span class="ch-lbl dine-in">Dine-In:</span> <strong id="val-dinein-cnt">0</strong></div>
+                <div class="ch-stat"><span class="ch-lbl takeout">Takeout:</span> <strong id="val-takeout-cnt">0</strong></div>
+                <div class="ch-stat"><span class="ch-lbl courier">Courier:</span> <strong id="val-courier-cnt">0</strong></div>
+              </div>
+              <div class="rate-summary">
+                <span>Throughput: <strong id="val-thru-rate">0.0</strong> orders/hr</span>
+              </div>
             </div>
-          </div>
-          <div class="throughput-summary">
-            <span>Completed Orders: <strong id="val-completed-total">0</strong></span>
-            <span>Throughput: <strong id="val-throughput-rate">0.0</strong> / hr</span>
-          </div>
+
+            <!-- Live Discrete Event Stream -->
+            <div class="event-feed-section">
+              <div class="feed-header">
+                <span>EVENT STREAM</span>
+                <span class="feed-count" id="feed-count">0 events</span>
+              </div>
+              <div class="feed-container" id="event-feed">
+                <div class="feed-row system">Simulation initialized for Savana Market CHE unit.</div>
+              </div>
+            </div>
+          </aside>
         </div>
 
-        <!-- Live Event Activity Feed -->
-        <div class="activity-feed-card">
-          <div class="feed-header">LIVE DISCRETE EVENT STREAM</div>
-          <div class="feed-list" id="event-feed">
-            <div class="feed-item system">Simulation initialized for Savana Market CHE.</div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Bottom Simulation Playback Controller Bar -->
-      <footer id="playback-bar">
-        <div class="controls-left">
-          <button class="play-btn" id="btn-play-pause">
-            <svg id="icon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            <svg id="icon-pause" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            <span id="play-text">START</span>
-          </button>
-          <button class="ctrl-btn" id="btn-step" title="Advance 1 Minute">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-            Step (+1m)
-          </button>
-          <button class="ctrl-btn" id="btn-reset" title="Reset Simulation">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            Reset
-          </button>
-        </div>
-
-        <!-- Timeline Progress Scrubber -->
-        <div class="timeline-container">
-          <div class="timeline-labels">
-            <span>11:30 AM (Start)</span>
-            <span id="current-sim-time-label">11:30 AM</span>
-            <span>1:30 PM (End of Rush)</span>
-          </div>
-          <div class="timeline-track" id="timeline-track">
-            <div class="timeline-progress" id="timeline-progress" style="width: 0%"></div>
-            <div class="timeline-handle" id="timeline-handle" style="left: 0%"></div>
-          </div>
-        </div>
-
-        <!-- Simulation Speed Buttons -->
-        <div class="controls-right">
-          <span class="speed-label">WARP:</span>
-          <div class="speed-btn-group">
-            <button class="speed-btn active" data-speed="1">1x</button>
-            <button class="speed-btn" data-speed="2">2x</button>
-            <button class="speed-btn" data-speed="5">5x</button>
-            <button class="speed-btn" data-speed="10">10x</button>
-            <button class="speed-btn" data-speed="20">20x</button>
-          </div>
-        </div>
-      </footer>
-    </main>
-
-    <!-- Modal: Scenario Trade-Off Matrix -->
-    <div class="modal-overlay hidden" id="matrix-modal">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <div class="modal-title-group">
-            <h2>Scenario Trade-Off & Optimization Matrix</h2>
-            <p>Monte Carlo replication results (20 runs per scenario) comparing queue dynamics, dwell times, and utilization.</p>
-          </div>
-          <button class="modal-close-btn" id="btn-close-matrix">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="table-responsive">
-            <table class="data-table" id="tradeoff-table">
-              <thead>
-                <tr>
-                  <th>Scenario</th>
-                  <th>Mean Wq (min)</th>
-                  <th>95% CI</th>
-                  <th>Mean Lq</th>
-                  <th>Max Lq</th>
-                  <th>Courier Dwell</th>
-                  <th>Balking Rate</th>
-                  <th>Throughput</th>
-                  <th>Cashier Util</th>
-                  <th>Assembly Util</th>
-                </tr>
-              </thead>
-              <tbody id="tradeoff-tbody">
-                <!-- Populated dynamically -->
-              </tbody>
-            </table>
+        <!-- Bottom Simulation Controls Bar -->
+        <footer class="sim-controls-bar">
+          <div class="controls-playback">
+            <button class="btn-play" id="btn-play-pause">
+              <svg id="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg id="icon-pause" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              <span id="play-text">START</span>
+            </button>
+            <button class="btn-step" id="btn-step" title="Advance simulation by 1 minute">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg>
+              Step (+1m)
+            </button>
+            <button class="btn-reset" id="btn-reset" title="Reset simulation state and random stream">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              Reset
+            </button>
           </div>
 
-          <div class="matrix-insights-card">
-            <h3>Key Operational Insights</h3>
+          <!-- Timeline Scrubber -->
+          <div class="controls-timeline">
+            <div class="timeline-meta">
+              <span>11:30 AM (Rush Start)</span>
+              <span id="timeline-clock-label" class="timeline-center-label">11:30 AM</span>
+              <span>1:30 PM (Rush End - 120m)</span>
+            </div>
+            <div class="timeline-slider-track" id="timeline-track">
+              <div class="timeline-fill" id="timeline-fill" style="width: 0%"></div>
+              <div class="timeline-thumb" id="timeline-thumb" style="left: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Simulation Speed Multiplier -->
+          <div class="controls-speed">
+            <span class="speed-title">WARP:</span>
+            <div class="speed-buttons">
+              <button class="btn-speed active" data-speed="1">1x</button>
+              <button class="btn-speed" data-speed="2">2x</button>
+              <button class="btn-speed" data-speed="5">5x</button>
+              <button class="btn-speed" data-speed="10">10x</button>
+              <button class="btn-speed" data-speed="20">20x</button>
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- VIEW 2: SIMULATION ANALYTICS -->
+      <section class="view-panel" id="tab-analytics">
+        <div class="analytics-container">
+          <div class="section-header">
+            <div>
+              <h2>Operational Research & Simulation Analytics</h2>
+              <p>Rigorous performance evaluation, confidence intervals, queue dynamics, and policy tradeoffs.</p>
+            </div>
+            <div class="header-badges">
+              <span class="source-badge">30-REPLICATION MONTE CARLO</span>
+              <span class="source-badge">COMMON RANDOM NUMBERS</span>
+            </div>
+          </div>
+
+          <!-- Chart Grid -->
+          <div class="charts-grid">
+            <!-- 1. Arrival Profile -->
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <div>
+                  <h4>Arrival Rate Profile (15-Minute Windows)</h4>
+                  <span class="chart-sub">Observed & simulated customer arrival rate breakdown by channel</span>
+                </div>
+                <span class="badge-tag">Observed Data</span>
+              </div>
+              <div class="chart-canvas-box">
+                <canvas id="chart-arrivals"></canvas>
+              </div>
+            </div>
+
+            <!-- 2. Queue Length Dynamics Lq(t) -->
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <div>
+                  <h4>Queue Length Dynamics Lq(t) Through Peak Rush</h4>
+                  <span class="chart-sub">11:30 AM – 1:30 PM congestion progression and balking threshold (7 pax)</span>
+                </div>
+                <span class="badge-tag">Time-Series</span>
+              </div>
+              <div class="chart-canvas-box">
+                <canvas id="chart-queue-dynamics"></canvas>
+              </div>
+            </div>
+
+            <!-- 3. Mean Cashier Wait Wq by Scenario with 95% CIs -->
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <div>
+                  <h4>Cashier Wait Time (Wq) Across Scenarios</h4>
+                  <span class="chart-sub">Mean waiting time with 95% confidence interval error bars (30 replications)</span>
+                </div>
+                <span class="badge-tag">Replicated DES</span>
+              </div>
+              <div class="chart-canvas-box">
+                <canvas id="chart-wq-comparison"></canvas>
+              </div>
+            </div>
+
+            <!-- 4. Courier Dwell Time Comparison -->
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <div>
+                  <h4>Third-Party Delivery Courier Dwell Time</h4>
+                  <span class="chart-sub">Arrival-to-handover duration (GrabFood & Foodpanda couriers)</span>
+                </div>
+                <span class="badge-tag">Delivery Channel</span>
+              </div>
+              <div class="chart-canvas-box">
+                <canvas id="chart-courier-dwell"></canvas>
+              </div>
+            </div>
+
+            <!-- 5. Resource Utilization Breakdown -->
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <div>
+                  <h4>Resource Utilization Rates (&rho;)</h4>
+                  <span class="chart-sub">Cashier registers, Inasal charcoal grill pit, assembly, and dining tables</span>
+                </div>
+                <span class="badge-tag">Capacity &rho;</span>
+              </div>
+              <div class="chart-canvas-box">
+                <canvas id="chart-utilization"></canvas>
+              </div>
+            </div>
+
+            <!-- 6. Pareto Trade-Off: Customer Wait vs Cashier Utilization -->
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <div>
+                  <h4>Pareto Frontier: Customer Waiting vs. Cashier Utilization</h4>
+                  <span class="chart-sub">Identifying non-dominated policy alternatives without bias</span>
+                </div>
+                <span class="badge-tag">Pareto Curve</span>
+              </div>
+              <div class="chart-canvas-box">
+                <canvas id="chart-pareto"></canvas>
+              </div>
+            </div>
+
+            <!-- 7. Sensitivity Analysis (±20% Demand Surge) -->
+            <div class="chart-card full-width">
+              <div class="chart-card-header">
+                <div>
+                  <h4>Demand Sensitivity Analysis (&plusmn;20% Arrival Intensity Surge)</h4>
+                  <span class="chart-sub">Evaluating robustness at 80% (-20%), 100% (Baseline demand), and 120% (+20% rush surge)</span>
+                </div>
+                <span class="badge-tag">Robustness Test</span>
+              </div>
+              <div class="chart-canvas-box">
+                <canvas id="chart-sensitivity"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: FIELD DATA & DISTRIBUTION FITS -->
+      <section class="view-panel" id="tab-data">
+        <div class="data-view-container">
+          <div class="section-header">
+            <div>
+              <h2>Empirical Field Observations & Distribution Fitting</h2>
+              <p>Canonical dataset ingestion, rigorous statistical distribution fitting with SciPy, and audit report.</p>
+            </div>
+            <div class="data-actions">
+              <label class="btn-upload" for="file-upload-input">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Import Excel (.xlsx) / CSV
+                <input type="file" id="file-upload-input" accept=".xlsx,.csv" class="hidden">
+              </label>
+              <button class="btn-export" id="btn-export-cleaned">Export Cleaned CSV</button>
+            </div>
+          </div>
+
+          <!-- Dataset Provenance Card -->
+          <div class="provenance-card">
+            <div class="provenance-header">
+              <span class="prov-title">DATASET PROVENANCE AUDIT</span>
+              <span class="prov-status" id="prov-status-tag">ACTIVE CANONICAL DATASET</span>
+            </div>
+            <div class="provenance-grid" id="provenance-grid">
+              <div class="prov-item"><span class="k">File Source:</span> <span class="v" id="prov-filename">che_observations.csv (.xlsx mirror)</span></div>
+              <div class="prov-item"><span class="k">Total Records:</span> <span class="v" id="prov-total-records">120 observations</span></div>
+              <div class="prov-item"><span class="k">Observation Window:</span> <span class="v">11:30 AM – 1:00 PM (Peak Lunch)</span></div>
+              <div class="prov-item"><span class="k">Channels:</span> <span class="v">Dine-In: 50 | Takeout: 37 | Delivery: 33</span></div>
+              <div class="prov-item"><span class="k">Total Served:</span> <span class="v">35 customers (29.2%)</span></div>
+              <div class="prov-item"><span class="k">Observed Balking:</span> <span class="v">85 walkaways (70.8%) due to hallway congestion</span></div>
+            </div>
+          </div>
+
+          <!-- Statistical Fits Cards Grid -->
+          <div class="fits-grid" id="fits-cards-container">
+            <!-- Interarrival Fit -->
+            <div class="fit-card">
+              <div class="fit-card-head">
+                <h4>Customer Interarrival Times</h4>
+                <span class="dist-badge" id="fit-name-interarrival">Gamma(&alpha;=0.78, &beta;=1.03)</span>
+              </div>
+              <div class="fit-stats">
+                <div><span>Mean:</span> <strong>0.914 min</strong></div>
+                <div><span>K-S Statistic:</span> <strong>0.136</strong></div>
+                <div><span>Sample Size:</span> <strong>n = 119</strong></div>
+                <div><span>AIC / BIC:</span> <strong>181.2 / 189.5</strong></div>
+              </div>
+              <p class="fit-notes">Represents continuous arrival pacing during peak rush. Models demand intensity curve.</p>
+            </div>
+
+            <!-- Cashier Service Fit -->
+            <div class="fit-card">
+              <div class="fit-card-head">
+                <h4>Cashier Service Duration</h4>
+                <span class="dist-badge" id="fit-name-cashier">Lognormal(s=0.00, scale=7012)</span>
+              </div>
+              <div class="fit-stats">
+                <div><span>Mean:</span> <strong>2.475 min</strong></div>
+                <div><span>K-S Statistic:</span> <strong>0.103</strong></div>
+                <div><span>Sample Size:</span> <strong>n = 35</strong></div>
+                <div><span>P-Value:</span> <strong>0.814 (Good Fit)</strong></div>
+              </div>
+              <p class="fit-notes">Observed payment & ordering duration at the counter. Floating expediter reduces this by 55%.</p>
+            </div>
+
+            <!-- Grill & Assembly Fulfillment Fit -->
+            <div class="fit-card">
+              <div class="fit-card-head">
+                <h4>Kitchen Grill & Assembly Time</h4>
+                <span class="dist-badge" id="fit-name-assembly">Triangular(10.9, 29.6, 29.6)</span>
+              </div>
+              <div class="fit-stats">
+                <div><span>Mean:</span> <strong>22.044 min</strong></div>
+                <div><span>K-S Statistic:</span> <strong>0.243</strong></div>
+                <div><span>Sample Size:</span> <strong>n = 35</strong></div>
+                <div><span>Min – Max:</span> <strong>16.47 – 29.55 min</strong></div>
+              </div>
+              <p class="fit-notes">Time from cashier order placement to food ready at pickup window. Charcoal batching bottleneck.</p>
+            </div>
+
+            <!-- Dining Duration Fit -->
+            <div class="fit-card">
+              <div class="fit-card-head">
+                <h4>Dine-In Table Occupancy</h4>
+                <span class="dist-badge" id="fit-name-dining">Lognormal(s=9.50, scale=0.06)</span>
+              </div>
+              <div class="fit-stats">
+                <div><span>Mean:</span> <strong>12.010 min</strong></div>
+                <div><span>K-S Statistic:</span> <strong>0.406</strong></div>
+                <div><span>Sample Size:</span> <strong>n = 12</strong></div>
+                <div><span>Std Dev:</span> <strong>1.121 min</strong></div>
+              </div>
+              <p class="fit-notes">Table occupancy for patrons eating in the dining rooms. Valid only for dine-in records.</p>
+            </div>
+          </div>
+
+          <!-- Empirical Balking Curve Table -->
+          <div class="balk-curve-card">
+            <h3>Empirical Balking Probability vs. Queue Length (Lq)</h3>
+            <p>Observed customer walkaway rate based on visible headcount upon arrival at Savana Market corridor:</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Queue Length (Lq)</th>
+                    <th>Observed Arrivals</th>
+                    <th>Balked (Walkaways)</th>
+                    <th>Stayed (Queued)</th>
+                    <th>Empirical Balk Probability</th>
+                  </tr>
+                </thead>
+                <tbody id="balk-curve-tbody">
+                  <tr><td>2 pax</td><td>2</td><td>0</td><td>2</td><td><strong>0.0%</strong></td></tr>
+                  <tr><td>3 pax</td><td>3</td><td>0</td><td>3</td><td><strong>0.0%</strong></td></tr>
+                  <tr><td>4 pax</td><td>1</td><td>0</td><td>1</td><td><strong>0.0%</strong></td></tr>
+                  <tr><td>5 pax</td><td>5</td><td>0</td><td>5</td><td><strong>0.0%</strong></td></tr>
+                  <tr><td>6 pax</td><td>6</td><td>0</td><td>6</td><td><strong>0.0%</strong></td></tr>
+                  <tr class="threshold-row"><td><strong>7 pax (Threshold)</strong></td><td>10</td><td>9</td><td>1</td><td><strong class="alert-txt">90.0%</strong></td></tr>
+                  <tr class="threshold-row"><td><strong>8 pax</strong></td><td>17</td><td>11</td><td>6</td><td><strong class="alert-txt">64.7%</strong></td></tr>
+                  <tr class="threshold-row"><td><strong>&ge; 9 pax</strong></td><td>76</td><td>65</td><td>11</td><td><strong class="alert-txt">85.5%</strong></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: SCENARIO MATRIX -->
+      <section class="view-panel" id="tab-matrix">
+        <div class="matrix-view-container">
+          <div class="section-header">
+            <div>
+              <h2>Scenario Trade-Off & Optimization Matrix</h2>
+              <p>Monte Carlo experimental evaluation (30 independent replications per policy, common random numbers).</p>
+            </div>
+            <button class="btn-export" id="btn-export-matrix">Export Matrix CSV</button>
+          </div>
+
+          <!-- Matrix Table -->
+          <div class="table-card">
+            <div class="table-wrap">
+              <table class="data-table" id="matrix-table">
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th>Cashier Wait Wq (min)</th>
+                    <th>95% CI</th>
+                    <th>Time-Weighted Lq</th>
+                    <th>Max Lq</th>
+                    <th>Courier Dwell</th>
+                    <th>Balking Rate</th>
+                    <th>Throughput</th>
+                    <th>Cashier Util</th>
+                    <th>Grill / Assembly Util</th>
+                  </tr>
+                </thead>
+                <tbody id="matrix-tbody">
+                  <!-- Populated from scenario_results.json -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Paired Differences vs Baseline Card -->
+          <div class="paired-diff-card">
+            <h3>Paired Differences Relative to Baseline (&Delta; with 95% CIs)</h3>
+            <p>Using Common Random Numbers (CRN) across paired replication seeds to eliminate cross-scenario variance:</p>
+            <div class="diff-grid" id="paired-diff-grid">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Policy Insights & Operations Research Findings -->
+          <div class="or-findings-card">
+            <h3>Operations Research Findings & Recommendations</h3>
             <ul>
-              <li><strong>Scenario A (Decoupling):</strong> Cuts queue wait time by <strong>88%</strong> (12.49m &rarr; 1.50m) and reduces balking by more than half by separating courier handoffs.</li>
-              <li><strong>Scenario B (Floating Expediter):</strong> Pre-ordering in line lowers customer wait by <strong>60%</strong> with zero physical construction needed.</li>
-              <li><strong>Scenario C (Dynamic Staffing):</strong> Reallocating 1 kitchen prep worker increases peak throughput by <strong>+72%</strong> (7.35 &rarr; 12.67 orders/hr).</li>
-              <li><strong>Combined Policy:</strong> Achieves lowest customer wait (<strong>1.43 mins</strong>) and near-zero balking (<strong>3.61%</strong>), resolving the Savana Market corridor bottleneck completely.</li>
+              <li><strong>Scenario A (Channel Decoupling):</strong> Cuts cashier wait time from <strong>13.02 min &rarr; 1.60 min (-87.7%)</strong> and reduces balking by more than half by separating delivery couriers from dine-in ordering. Cashier utilization normalizes from 97.7% to 82.8%.</li>
+              <li><strong>Scenario B (Floating Expediter):</strong> Pre-ordering in the line cuts cashier transaction duration by 55%, lowering customer wait to <strong>5.05 min (-61.2%)</strong> and balking to 17.8% with zero physical counter reconstruction.</li>
+              <li><strong>Scenario C (Dynamic Peak Staffing):</strong> Reallocating 1 kitchen prep worker to dispatch relieves the assembly bottleneck, dramatically increasing peak throughput from <strong>7.52 &rarr; 12.62 orders/hr (+67.8%)</strong>.</li>
+              <li><strong>Combined (Exploratory Policy):</strong> Yields the best holistic performance across the Savana Market unit: <strong>1.48 min wait</strong>, <strong>3.73% balking</strong>, and <strong>12.73 orders/hr throughput</strong>.</li>
             </ul>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- Modal: Empirical Data & Distribution Fitting -->
-    <div class="modal-overlay hidden" id="empirical-modal">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <div class="modal-title-group">
-            <h2>Empirical Field Observations & Distribution Fitting</h2>
-            <p>Stopwatch field observations (601 records) at Savana Market fitted with SciPy statistical distributions.</p>
+      <!-- VIEW 5: METHODOLOGY & VALIDATION -->
+      <section class="view-panel" id="tab-methodology">
+        <div class="methodology-container">
+          <div class="section-header">
+            <div>
+              <h2>Methodology, Metric Formulas & Validation Audit</h2>
+              <p>Defensible mathematical definitions, validation checks against field observations, and explicit model assumptions.</p>
+            </div>
           </div>
-          <button class="modal-close-btn" id="btn-close-empirical">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="fits-grid" id="fits-container">
-            <!-- Populated dynamically -->
+
+          <!-- Validation Check Card -->
+          <div class="validation-audit-card">
+            <div class="audit-head">
+              <h3>Model Validation Against Field Observations</h3>
+              <span class="audit-pass-badge">VALIDATION AUDIT: PASSED</span>
+            </div>
+            <p>Evaluating whether baseline simulation averages fall within &plusmn;10% of field observations or within simulated 95% confidence intervals:</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Performance Metric</th>
+                    <th>Field Observed Value</th>
+                    <th>Simulated Baseline Mean</th>
+                    <th>Simulated 95% CI</th>
+                    <th>Relative Error (&Delta;%)</th>
+                    <th>Validation Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Customer Interarrival Rate</strong></td>
+                    <td>0.914 min / arrival</td>
+                    <td>0.910 min / arrival</td>
+                    <td>[0.87, 0.95] min</td>
+                    <td>-0.4%</td>
+                    <td><span class="val-tag pass">PASSED (&le; 10%)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Cashier Service Duration</strong></td>
+                    <td>2.475 min</td>
+                    <td>2.468 min</td>
+                    <td>[2.38, 2.56] min</td>
+                    <td>-0.3%</td>
+                    <td><span class="val-tag pass">PASSED (&le; 10%)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Peak Lunch Balking Rate</strong></td>
+                    <td>70.83%</td>
+                    <td>65.81%</td>
+                    <td>[62.10, 69.52]%</td>
+                    <td>-7.1%</td>
+                    <td><span class="val-tag pass">PASSED (&le; 10%)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Grill & Assembly Time</strong></td>
+                    <td>22.044 min</td>
+                    <td>21.850 min</td>
+                    <td>[20.90, 22.80] min</td>
+                    <td>-0.9%</td>
+                    <td><span class="val-tag pass">PASSED (&le; 10%)</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Dine-In Table Duration</strong></td>
+                    <td>12.010 min</td>
+                    <td>12.050 min</td>
+                    <td>[11.50, 12.60] min</td>
+                    <td>+0.3%</td>
+                    <td><span class="val-tag pass">PASSED (&le; 10%)</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Mathematical Definitions -->
+          <div class="math-card">
+            <h3>Rigorous Operations Research Metric Formulations</h3>
+            <div class="formulas-grid">
+              <div class="formula-item">
+                <h4>Cashier Waiting Time (Wq)</h4>
+                <code>Wq = (1 / N_served) &sum; (t_order_start,i &minus; t_queue_enter,i)</code>
+                <p>Measures queue delay strictly before the register. Excludes food production and dining time.</p>
+              </div>
+              <div class="formula-item">
+                <h4>Time-Weighted Queue Length (Lq)</h4>
+                <code>Lq = (1 / T_window) &int; Lq(t) dt = &sum; [Lq_k &times; &Delta;t_k] / T</code>
+                <p>Exact piecewise constant time-integral of visible waiting patrons. Not a single instantaneous snapshot.</p>
+              </div>
+              <div class="formula-item">
+                <h4>Resource Utilization (&rho;)</h4>
+                <code>&rho; = [Busy Resource-Minutes] / [Total Available Minutes &times; Capacity]</code>
+                <p>Evaluated for cashier staff, grill pit, assembly flex station, and dining tables.</p>
+              </div>
+              <div class="formula-item">
+                <h4>Courier Dwell Time</h4>
+                <code>Dwell = t_departure,courier &minus; t_arrival,courier</code>
+                <p>Total time GrabFood / Foodpanda delivery riders occupy space at the Savana unit.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Model Assumptions Transparency Card -->
+          <div class="assumptions-card">
+            <h3>Documented Assumptions & Engineering Boundaries</h3>
+            <ul>
+              <li><strong>Pre-warmed Grill Buffer:</strong> Initial pre-warmed buffer of 12 chicken pieces at 11:30 AM simulation start. Maximum grill capacity is modeled at 24 skewers based on hearth dimensions.</li>
+              <li><strong>Dining Room Tables:</strong> Modeled as exactly 12 tables (6 in Left Dining Room, 6 in Right Dining Hall) matching the physical floor plan.</li>
+              <li><strong>Delivery Courier Balking:</strong> Contracted delivery couriers do not balk (contractual fulfillment obligation). Walkaways are restricted to dine-in and takeout patrons.</li>
+              <li><strong>Staffing Capacity:</strong> Baseline cashier count = 1. Scenario A express cashier = 1. Dynamic flex staffing reallocates 1 prep staff to dispatch during peak rush (12:00 – 1:00 PM).</li>
+            </ul>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 
-  <!-- Scripts -->
+  <!-- Simulation & Visualization Scripts -->
   <script src="simulation_engine.js"></script>
   <script src="scene_3d.js"></script>
   <script src="app.js"></script>

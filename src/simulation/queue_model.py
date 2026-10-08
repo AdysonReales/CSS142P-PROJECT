@@ -47,7 +47,7 @@ class ScenarioConfig:
     grill_target_batch_size: int = 12  # Batch launch threshold
 
     # Dining tables configuration
-    table_count: int = 14              # 14 tables (~44 seats) in Savana Market CHE unit
+    table_count: int = 12              # 12 tables (6 left dining room + 6 right dining hall)
 
     # Arrival surge settings
     arrival_multiplier: float = 1.0    # Sensitivity scaling factor
@@ -75,7 +75,7 @@ class ChickenHouseSimulation:
         self.res_grill_master = simpy.Resource(self.env, capacity=1)
         self.res_assembly = simpy.Resource(self.env, capacity=self.config.assembly_staff_count)
 
-        # Dining tables
+        # Dining tables (12 tables matching authentic layout)
         self.tables: List[DiningTable] = [
             DiningTable(table_id=i + 1, seats=4 if (i % 3 != 0) else 2)
             for i in range(self.config.table_count)
@@ -94,11 +94,31 @@ class ChickenHouseSimulation:
         # Operational telemetry time-series
         self.telemetry: List[Dict[str, Any]] = []
 
+        # Time-weighted Lq accumulators
+        self.last_q_change_time = 0.0
+        self.last_queue_length = 0
+        self.time_weighted_lq_sum = 0.0
+
         # Busy time accumulators for utilization calculation
         self.cashier_busy_time = 0.0
         self.grill_busy_time = 0.0
         self.assembly_busy_time = 0.0
         self.expediter_active_time = 0.0
+
+    def record_queue_change(self):
+        """Integrates queue length over elapsed time for rigorous time-weighted Lq."""
+        now = self.env.now
+        if now > self.last_q_change_time:
+            dt = now - self.last_q_change_time
+            # Only accumulate post-warmup
+            if self.last_q_change_time >= self.config.warmup_duration:
+                self.time_weighted_lq_sum += self.last_queue_length * dt
+            elif now > self.config.warmup_duration:
+                effective_dt = now - self.config.warmup_duration
+                self.time_weighted_lq_sum += self.last_queue_length * effective_dt
+
+            self.last_q_change_time = now
+        self.last_queue_length = self.get_total_queue_length()
 
     def log_event(self, event_type: str, cust: Optional[Customer] = None, details: str = "", table_id: Optional[int] = None):
         """Records granular event for live 3D visualizer and state inspection."""
@@ -209,9 +229,11 @@ class ChickenHouseSimulation:
             cashier_res = self.res_cashier_shared
             cust.cashier_id = 1
 
+        self.record_queue_change()
         with cashier_res.request() as req:
             yield req
 
+            self.record_queue_change()
             cust.status = CustomerStatus.ORDERING
             cust.t_order_start = self.env.now
             self.log_event("ORDER_START", cust, f"Ordering at Cashier #{cust.cashier_id}")
@@ -385,7 +407,12 @@ class ChickenHouseSimulation:
         kitchen_wait_times = [c.kitchen_wait_time for c in completed]
         mean_kitchen_wait = float(np.mean(kitchen_wait_times)) if kitchen_wait_times else 0.0
 
-        # Queue length stats
+        # Queue length stats: exact time-weighted Lq
+        self.record_queue_change()
+        obs_window = max(0.001, self.config.simulation_duration - self.config.warmup_duration)
+        time_weighted_lq = float(self.time_weighted_lq_sum / obs_window)
+
+        # Snapshot-based Lq from telemetry (for methodological comparison)
         q_lengths = [t["queue_length"] for t in self.telemetry if t["time_min"] >= self.config.warmup_duration]
         mean_lq = float(np.mean(q_lengths)) if q_lengths else 0.0
         max_lq = int(np.max(q_lengths)) if q_lengths else 0
@@ -396,7 +423,7 @@ class ChickenHouseSimulation:
         balk_rate = float(balk_count / total_arrivals * 100.0) if total_arrivals > 0 else 0.0
 
         # Throughput
-        effective_duration_hours = (self.config.simulation_duration - self.config.warmup_duration) / 60.0
+        effective_duration_hours = obs_window / 60.0
         throughput_per_hour = len(completed) / effective_duration_hours if effective_duration_hours > 0 else 0.0
 
         # Resource Utilization (%)
@@ -428,8 +455,9 @@ class ChickenHouseSimulation:
             "courier_wq_min": round(courier_wq, 2),
             "mean_courier_dwell_time_min": round(mean_courier_dwell, 2),
             "p95_courier_dwell_time_min": round(p95_courier_dwell, 2),
-            "mean_kitchen_wait_min": round(mean_kitchen_wait, 2),
-            "mean_queue_length_lq": round(mean_lq, 2),
+            "mean_queue_length_lq": round(time_weighted_lq, 2),
+            "time_weighted_lq": round(time_weighted_lq, 2),
+            "snapshot_lq_mean": round(mean_lq, 2),
             "max_queue_length_lq": max_lq,
             "cashier_utilization_pct": round(cashier_util, 1),
             "grill_utilization_pct": round(grill_util, 1),

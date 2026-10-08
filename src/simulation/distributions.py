@@ -192,33 +192,108 @@ def fit_empirical_data_to_file(raw_csv_path: str, output_json_path: str) -> Dict
     """Reads raw CSV observations and outputs fitted parameters for the simulation engine."""
     df = pd.read_csv(raw_csv_path)
 
-    clean_df = df[df["balked"] == 0]
+    # 1. Channel proportions
+    channel_counts = df["Channel"].value_counts().to_dict()
+    total_obs = len(df)
+    channel_props = {k: v / total_obs for k, v in channel_counts.items()}
 
-    inter_arrivals = df["interarrival_time"].values
-    best_interarrival = fit_best_distribution(inter_arrivals, ["expon", "gamma"])
+    # 2. Interarrival times (overall and per channel)
+    # Filter out initial 0 or negative values
+    inter_arrivals = df["Interarrival_Min"].dropna().values
+    inter_arrivals = inter_arrivals[inter_arrivals > 0.001]
+    best_interarrival = fit_best_distribution(inter_arrivals, ["expon", "gamma", "weibull_min"])
 
-    ordering_dine_in = clean_df[clean_df["channel"] == "dine_in"]["ordering_time"].values
-    best_order_dine_in = fit_best_distribution(ordering_dine_in, ["triang", "lognorm", "gamma"])
+    channel_interarrivals = {}
+    for ch in ["dine_in", "takeout", "delivery"]:
+        ch_df = df[df["Channel"] == ch]
+        if "Channel_Interarrival_Min" in ch_df.columns:
+            arrs = ch_df["Channel_Interarrival_Min"].dropna().values
+            arrs = arrs[arrs > 0.001]
+            if len(arrs) >= 5:
+                channel_interarrivals[ch] = asdict(fit_best_distribution(arrs, ["expon", "gamma"]))
 
-    ordering_takeout = clean_df[clean_df["channel"] == "takeout"]["ordering_time"].values
-    best_order_takeout = fit_best_distribution(ordering_takeout, ["triang", "lognorm", "gamma"])
+    # 3. Cashier service times (by channel and overall)
+    served_df = df[df["Balked"].astype(str).str.lower().isin(["false", "0", "no"])].copy()
+    cashier_times = served_df["Cashier_Service_Min"].dropna().values
+    cashier_times = cashier_times[cashier_times > 0.01]
+    best_cashier_overall = fit_best_distribution(cashier_times, ["triang", "gamma", "lognorm", "expon"])
 
-    ordering_courier = clean_df[clean_df["channel"] == "delivery_courier"]["ordering_time"].values
-    best_order_courier = fit_best_distribution(ordering_courier, ["triang", "lognorm", "expon"])
+    cashier_by_channel = {}
+    for ch in ["dine_in", "takeout", "delivery"]:
+        ch_times = served_df[served_df["Channel"] == ch]["Cashier_Service_Min"].dropna().values
+        ch_times = ch_times[ch_times > 0.01]
+        if len(ch_times) >= 3:
+            cashier_by_channel[ch] = asdict(fit_best_distribution(ch_times, ["triang", "gamma", "lognorm"]))
 
-    fulfillment_times = clean_df["fulfillment_time"].values
-    best_fulfillment = fit_best_distribution(fulfillment_times, ["gamma", "lognorm", "triang"])
+    # 4. Grill & Assembly / Kitchen fulfillment times
+    grill_assembly_times = served_df["Grill_Assembly_Min"].dropna().values
+    grill_assembly_times = grill_assembly_times[grill_assembly_times > 0.01]
+    best_grill_assembly = fit_best_distribution(grill_assembly_times, ["gamma", "lognorm", "triang", "weibull_min"])
+
+    # 5. Dining duration (dine-in only)
+    dine_df = served_df[served_df["Channel"] == "dine_in"]
+    dining_times = dine_df["Dining_Duration_Min"].dropna().values
+    dining_times = dining_times[dining_times > 0.01]
+    best_dining = fit_best_distribution(dining_times, ["gamma", "lognorm", "triang", "expon"])
+
+    # 6. Balking behavior vs Queue Length
+    balk_by_q = {}
+    for q_len, grp in df.groupby("Queue_Length_Lq"):
+        total_q = len(grp)
+        balk_count = int(grp["Balked"].astype(str).str.lower().isin(["true", "1", "yes"]).sum())
+        balk_by_q[int(q_len)] = {
+            "total_arrivals": total_q,
+            "balked": balk_count,
+            "balk_probability": round(balk_count / total_q, 3) if total_q > 0 else 0.0
+        }
+
+    total_balked = int(df["Balked"].astype(str).str.lower().isin(["true", "1", "yes"]).sum())
 
     results = {
-        "interarrival_fit": asdict(best_interarrival),
-        "ordering_dine_in_fit": asdict(best_order_dine_in),
-        "ordering_takeout_fit": asdict(best_order_takeout),
-        "ordering_courier_fit": asdict(best_order_courier),
-        "fulfillment_fit": asdict(best_fulfillment),
-        "channel_proportions": df["channel"].value_counts(normalize=True).to_dict(),
-        "total_records": len(df),
-        "balk_count": int(df["balked"].sum()),
-        "balk_rate": float(df["balked"].mean()),
+        "metadata": {
+            "source_file": str(raw_csv_path),
+            "total_records": total_obs,
+            "total_served": len(served_df),
+            "total_balked": total_balked,
+            "overall_balk_rate": round(total_balked / total_obs, 4),
+            "channel_counts": channel_counts,
+            "channel_proportions": channel_props,
+        },
+        "fitted_distributions": {
+            "interarrival_overall": asdict(best_interarrival),
+            "interarrival_by_channel": channel_interarrivals,
+            "cashier_service_overall": asdict(best_cashier_overall),
+            "cashier_service_by_channel": cashier_by_channel,
+            "grill_assembly": asdict(best_grill_assembly),
+            "dining_duration": asdict(best_dining),
+        },
+        "empirical_balking_curve": balk_by_q,
+        "observed_summary_statistics": {
+            "interarrival_min": {
+                "mean": round(float(np.mean(inter_arrivals)), 3),
+                "std": round(float(np.std(inter_arrivals)), 3),
+                "median": round(float(np.median(inter_arrivals)), 3),
+                "sample_size": len(inter_arrivals),
+            },
+            "cashier_service_min": {
+                "mean": round(float(np.mean(cashier_times)), 3) if len(cashier_times) else None,
+                "std": round(float(np.std(cashier_times)), 3) if len(cashier_times) else None,
+                "median": round(float(np.median(cashier_times)), 3) if len(cashier_times) else None,
+                "sample_size": len(cashier_times),
+            },
+            "grill_assembly_min": {
+                "mean": round(float(np.mean(grill_assembly_times)), 3) if len(grill_assembly_times) else None,
+                "std": round(float(np.std(grill_assembly_times)), 3) if len(grill_assembly_times) else None,
+                "median": round(float(np.median(grill_assembly_times)), 3) if len(grill_assembly_times) else None,
+                "sample_size": len(grill_assembly_times),
+            },
+            "dining_duration_min": {
+                "mean": round(float(np.mean(dining_times)), 3) if len(dining_times) else None,
+                "std": round(float(np.std(dining_times)), 3) if len(dining_times) else None,
+                "median": round(float(np.median(dining_times)), 3) if len(dining_times) else None,
+                "sample_size": len(dining_times),
+            },
+        }
     }
 
     out_p = Path(output_json_path)
@@ -230,8 +305,12 @@ def fit_empirical_data_to_file(raw_csv_path: str, output_json_path: str) -> Dict
 
 
 if __name__ == "__main__":
-    raw_p = "d:/A CODE FILES/CSS142P-PROJECT/data/raw/che_peak_observations.csv"
-    out_p = "d:/A CODE FILES/CSS142P-PROJECT/data/processed/fitted_distributions.json"
+    raw_p = "d:/A CODE FILES/CSS142P-PROJECT/data/raw/che_observations.csv"
+    out_p = "d:/A CODE FILES/CSS142P-PROJECT/data/processed/calibrated_inputs.json"
     fit_res = fit_empirical_data_to_file(raw_p, out_p)
-    print("Fitted distributions successfully:")
-    print(json.dumps(fit_res, indent=2))
+    print("Fitted distributions successfully to calibrated_inputs.json:")
+    print(f"Total observations: {fit_res['metadata']['total_records']}")
+    print(f"Interarrival mean: {fit_res['observed_summary_statistics']['interarrival_min']['mean']} min")
+    print(f"Cashier service mean: {fit_res['observed_summary_statistics']['cashier_service_min']['mean']} min")
+    print(f"Grill assembly mean: {fit_res['observed_summary_statistics']['grill_assembly_min']['mean']} min")
+    print(f"Dining duration mean: {fit_res['observed_summary_statistics']['dining_duration_min']['mean']} min")

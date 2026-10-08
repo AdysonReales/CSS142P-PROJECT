@@ -1,0 +1,283 @@
+{
+  "metadata": {
+    "source_file": "d:/A CODE FILES/CSS142P-PROJECT/data/raw/che_observations.csv",
+    "total_records": 120,
+    "total_served": 35,
+    "total_balked": 85,
+    "overall_balk_rate": 0.7083,
+    "channel_counts": {
+      "dine_in": 50,
+      "takeout": 37,
+      "delivery": 33
+    },
+    "channel_proportions": {
+      "dine_in": 0.4166666666666667,
+      "takeout": 0.30833333333333335,
+      "delivery": 0.275
+    }
+  },
+  "fitted_distributions": {
+    "interarrival_overall": {
+      "dist_name": "gamma",
+      "params": [
+        0.7793557326091936,
+        0.016999999999995897,
+        1.0269916977060656
+      ],
+      "ks_statistic": 0.1355446587261439,
+      "ks_pvalue": 0.022821509112994853,
+      "aic": 181.16322762191035,
+      "bic": 189.50059810124495
+    },
+    "interarrival_by_channel": {
+      "dine_in": {
+        "dist_name": "gamma",
+        "params": [
+          0.9501785372783483,
+          0.016999999999999398,
+          2.2528067373220306
+        ],
+        "ks_statistic": 0.08254134165888038,
+        "ks_pvalue": 0.864948310862597,
+        "aic": 175.66455576318734,
+        "bic": 181.34001665751921
+      },
+      "takeout": {
+        "dist_name": "gamma",
+        "params": [
+          0.6726863982985654,
+          0.04999999999999989,
+          4.678119963345103
+        ],
+        "ks_statistic": 0.14073477311358046,
+        "ks_pvalue": 0.43417966689598364,
+        "aic": 113.16732220271359,
+        "bic": 117.91787901808192
+      },
+      "delivery": {
+        "dist_name": "gamma",
+        "params": [
+          0.5401491566750156,
+          0.06700000000000719,
+          2.641269731096509
+        ],
+        "ks_statistic": 0.33445985393326794,
+        "ks_pvalue": 0.0010780559435530357,
+        "aic": 128.32129996795393,
+        "bic": 132.7185076763531
+      }
+    },
+    "cashier_service_overall": {
+      "dist_name": "lognorm",
+      "params": [
+        2.798641490644823e-05,
+        -7009.541811657627,
+        7012.017237483008
+      ],
+      "ks_statistic": 0.10309621508737174,
+      "ks_pvalue": 0.814240527324523,
+      "aic": -8.663047693978559,
+      "bic": -3.997003509510318
+    },
+    "cashier_service_by_channel": {
+      "dine_in": {
+        "dist_name": "triang",
+        "params": [
+          0.9999999324934443,
+          1.9986802972675508,
+          0.771319927625743
+        ],
+        "ks_statistic": 0.28851037773891386,
+        "ks_pvalue": 0.22289269732815997,
+        "aic": -3.005358132143561,
+        "bic": -1.5506381827795597
+      },
+      "takeout": {
+        "dist_name": "lognorm",
+        "params": [
+          9.89177858353107,
+          2.0999999999999996,
+          0.01668084015577909
+        ],
+        "ks_statistic": 0.5041087374765302,
+        "ks_pvalue": 0.004112402802697,
+        "aic": -2.4227443309384853,
+        "bic": -1.2290585125433733
+      },
+      "delivery": {
+        "dist_name": "lognorm",
+        "params": [
+          9.537766522218474,
+          2.0599999999999996,
+          0.02309258885715331
+        ],
+        "ks_statistic": 0.4733724133458492,
+        "ks_pvalue": 0.005451470668243474,
+        "aic": 3.7429039790809124,
+        "bic": 5.197623928444914
+      }
+    },
+    "grill_assembly": {
+      "dist_name": "triang",
+      "params": [
+        0.9999999999574751,
+        10.862981399342733,
+        18.73702125905055
+      ],
+      "ks_statistic": 0.24299940917006896,
+      "ks_pvalue": 0.026420108478780513,
+      "aic": 204.70279534271447,
+      "bic": 209.3688395271827
+    },
+    "dining_duration": {
+      "dist_name": "lognorm",
+      "params": [
+        9.49602114409274,
+        10.319999999999999,
+        0.06471715744195433
+      ],
+      "ks_statistic": 0.40582888741041073,
+      "ks_pvalue": 0.026779637027869785,
+      "aic": 28.36997973803572,
+      "bic": 29.824699687399722
+    }
+  },
+  "empirical_balking_curve": {
+    "2": {
+      "total_arrivals": 2,
+      "balked": 0,
+      "balk_probability": 0.0
+    },
+    "3": {
+      "total_arrivals": 3,
+      "balked": 0,
+      "balk_probability": 0.0
+    },
+    "4": {
+      "total_arrivals": 1,
+      "balked": 0,
+      "balk_probability": 0.0
+    },
+    "5": {
+      "total_arrivals": 5,
+      "balked": 0,
+      "balk_probability": 0.0
+    },
+    "6": {
+      "total_arrivals": 6,
+      "balked": 0,
+      "balk_probability": 0.0
+    },
+    "7": {
+      "total_arrivals": 10,
+      "balked": 9,
+      "balk_probability": 0.9
+    },
+    "8": {
+      "total_arrivals": 17,
+      "balked": 11,
+      "balk_probability": 0.647
+    },
+    "9": {
+      "total_arrivals": 5,
+      "balked": 5,
+      "balk_probability": 1.0
+    },
+    "11": {
+      "total_arrivals": 1,
+      "balked": 1,
+      "balk_probability": 1.0
+    },
+    "12": {
+      "total_arrivals": 1,
+      "balked": 1,
+      "balk_probability": 1.0
+    },
+    "13": {
+      "total_arrivals": 2,
+      "balked": 2,
+      "balk_probability": 1.0
+    },
+    "14": {
+      "total_arrivals": 1,
+      "balked": 1,
+      "balk_probability": 1.0
+    },
+    "15": {
+      "total_arrivals": 3,
+      "balked": 2,
+      "balk_probability": 0.667
+    },
+    "16": {
+      "total_arrivals": 6,
+      "balked": 6,
+      "balk_probability": 1.0
+    },
+    "17": {
+      "total_arrivals": 10,
+      "balked": 8,
+      "balk_probability": 0.8
+    },
+    "18": {
+      "total_arrivals": 12,
+      "balked": 11,
+      "balk_probability": 0.917
+    },
+    "19": {
+      "total_arrivals": 12,
+      "balked": 7,
+      "balk_probability": 0.583
+    },
+    "20": {
+      "total_arrivals": 6,
+      "balked": 6,
+      "balk_probability": 1.0
+    },
+    "21": {
+      "total_arrivals": 9,
+      "balked": 7,
+      "balk_probability": 0.778
+    },
+    "22": {
+      "total_arrivals": 5,
+      "balked": 5,
+      "balk_probability": 1.0
+    },
+    "23": {
+      "total_arrivals": 2,
+      "balked": 2,
+      "balk_probability": 1.0
+    },
+    "24": {
+      "total_arrivals": 1,
+      "balked": 1,
+      "balk_probability": 1.0
+    }
+  },
+  "observed_summary_statistics": {
+    "interarrival_min": {
+      "mean": 0.914,
+      "std": 0.8,
+      "median": 0.75,
+      "sample_size": 119
+    },
+    "cashier_service_min": {
+      "mean": 2.475,
+      "std": 0.196,
+      "median": 2.46,
+      "sample_size": 35
+    },
+    "grill_assembly_min": {
+      "mean": 22.044,
+      "std": 4.43,
+      "median": 21.83,
+      "sample_size": 35
+    },
+    "dining_duration_min": {
+      "mean": 12.01,
+      "std": 1.393,
+      "median": 11.665,
+      "sample_size": 12
+    }
+  }
+}

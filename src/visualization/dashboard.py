@@ -17,7 +17,7 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def launch_dashboard(port: int = 8080, open_browser: bool = True):
+def launch_dashboard(port: int = 8080, open_browser: bool = False):
     web_dir = Path(__file__).resolve().parent.parent.parent / "web"
     os.chdir(web_dir)
 
@@ -25,10 +25,10 @@ def launch_dashboard(port: int = 8080, open_browser: bool = True):
     # Use ThreadingHTTPServer for responsive multi-threaded serving
     with http.server.ThreadingHTTPServer(server_address, QuietHandler) as httpd:
         url = f"http://localhost:{port}"
-        print("=" * 70)
-        print("  CARLO'S BACOLOD CHICKEN HOUSE EXPRESS (CHE) MAKATI - 3D TWIN")
-        print(f"  Interactive 3D Digital Twin live at: {url}")
-        print("=" * 70)
+        print("=" * 70, flush=True)
+        print("  CARLO'S BACOLOD CHICKEN HOUSE EXPRESS (CHE) MAKATI - 3D TWIN", flush=True)
+        print(f"  Interactive 3D Digital Twin live at: {url}", flush=True)
+        print("=" * 70, flush=True)
 
         if open_browser:
             webbrowser.open(url)
@@ -36,10 +36,10 @@ def launch_dashboard(port: int = 8080, open_browser: bool = True):
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("\nDashboard server stopped.")
+            print("\nDashboard server stopped.", flush=True)
             httpd.shutdown()
 
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
-    launch_dashboard(port=port)
+    port = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 8080
+    launch_dashboard(port=port, open_browser=False)

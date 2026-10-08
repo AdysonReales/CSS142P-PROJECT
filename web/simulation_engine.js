@@ -29,8 +29,8 @@ class SimulationEngine {
     this.grillBacklog = 0;
     this.grillBatchTimer = 0;
 
-    // Dining tables (14 tables)
-    this.tables = Array.from({ length: 14 }, (_, i) => ({ id: i + 1, occupied: false, custId: null, releaseTime: 0 }));
+    // Dining tables (12 tables matching authentic floor plan layout: 6 Left + 6 Right)
+    this.tables = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, occupied: false, custId: null, releaseTime: 0 }));
 
     // Telemetry & metrics
     this.completedCount = 0;
@@ -39,6 +39,11 @@ class SimulationEngine {
     this.waitTimes = [];
     this.courierDwellTimes = [];
     this.peakQueueLength = 0;
+
+    // Time-weighted Lq tracking
+    this.lastQChangeTime = 0.0;
+    this.timeWeightedLqSum = 0.0;
+    this.lastQLength = 0;
 
     // Event listener callback
     this.onEvent = null;
@@ -80,9 +85,9 @@ class SimulationEngine {
         };
       case 'combined':
         return {
-          name: "Combined Policy: Best Practice",
-          badge: "COMBINED BEST",
-          desc: "Channel Decoupling + Floating Expediter + Dynamic Peak Assembly Support.",
+          name: "Combined (Exploratory Policy)",
+          badge: "COMBINED (EXPLORATORY)",
+          desc: "Exploratory combination: Decoupled lines + Floating Expediter + Dynamic Peak Assembly.",
           decoupled: true,
           expediter: true,
           dynamicStaff: true,
@@ -108,19 +113,21 @@ class SimulationEngine {
 
   sampleInterarrival() {
     // Non-homogeneous surge: peak around 45% of duration (12:15 - 12:45 PM)
+    // Calibrated empirical base rate ~0.91 min
     const progress = this.currentTime / this.maxDuration;
     const surge = 1.0 + 1.25 * Math.exp(-Math.pow(progress - 0.45, 2) / 0.035);
-    const meanInterarrival = 1.25 / surge;
+    const meanInterarrival = 0.914 / surge;
     // Exponential distribution
-    return -meanInterarrival * Math.log(1.0 - this.random());
+    return -meanInterarrival * Math.log(Math.max(1e-6, 1.0 - this.random()));
   }
 
   sampleOrderingTime(channel, prepped) {
-    let min = 0.8, mode = 1.6, max = 3.0;
+    // Calibrated cashier service mean ~2.48 min
+    let min = 1.8, mode = 2.4, max = 3.4;
     if (channel === 'delivery_courier') {
-      min = 0.35; mode = 0.7; max = 1.3;
+      min = 1.2; mode = 2.0; max = 2.8;
     } else if (channel === 'takeout') {
-      min = 0.6; mode = 1.2; max = 2.4;
+      min = 1.6; mode = 2.3; max = 3.2;
     }
     // Triangular
     const u = this.random();
@@ -130,18 +137,30 @@ class SimulationEngine {
       : max - Math.sqrt((1 - u) * (max - min) * (max - mode));
 
     if (prepped) val *= 0.45; // Expediter pre-ordering cuts cashier transaction time by 55%
-    return Math.max(0.2, val);
+    return Math.max(0.3, val);
   }
 
   sampleAssemblyTime(channel, items, isDynamic) {
-    let base = 2.4 + (items - 1) * 0.4;
-    if (isDynamic) base *= 0.65; // 35% faster assembly
-    return base;
+    let min = 1.2, mode = 2.0, max = 3.2;
+    if (channel === 'takeout') {
+      min = 1.5; mode = 2.5; max = 4.0;
+    } else if (channel === 'delivery_courier') {
+      min = 1.3; mode = 2.2; max = 3.6;
+    }
+    const u = this.random();
+    const f = (mode - min) / (max - min);
+    let val = (u < f)
+      ? min + Math.sqrt(u * (max - min) * (mode - min))
+      : max - Math.sqrt((1 - u) * (max - min) * (max - mode));
+
+    val += (items - 1) * 0.4;
+    if (isDynamic) val *= 0.65; // 35% faster assembly with dynamic helper
+    return Math.max(0.6, val);
   }
 
   sampleDiningTime() {
-    // Gamma approximation
-    return 22.0 + this.random() * 15.0;
+    // Calibrated dining duration: mean ~14.0 min
+    return 10.0 + this.random() * 8.0;
   }
 
   step(deltaMinutes) {
@@ -305,13 +324,14 @@ class SimulationEngine {
 
     // Wait until chicken buffer is available
     if (this.grillBuffer >= cust.items_count) {
-      if (cust.status === 'WAITING_FOOD') {
-        cust.status = 'WAITING_FOOD';
+      if (cust.status !== 'IN_ASSEMBLY') {
+        cust.status = 'IN_ASSEMBLY';
         cust.assembly_start_time = this.currentTime;
         const isDynamic = this.config.dynamicStaff && (this.currentTime >= 30 && this.currentTime <= 90);
         cust.assembly_remaining = this.sampleAssemblyTime(cust.channel, cust.items_count, isDynamic);
         this.grillBuffer -= cust.items_count;
         this.grillBacklog = Math.max(0, this.grillBacklog - cust.items_count);
+        this.emit('ASSEMBLY_START', cust, `Assembly started (${cust.items_count} inasal pcs)`);
       }
 
       cust.assembly_remaining -= dt;
@@ -336,7 +356,7 @@ class SimulationEngine {
           this.channelCompleted.takeout++;
           this.emit('PICKUP_DISPATCH', cust, 'Takeout package handed over');
         } else {
-          // Dine-In: Seat at dining table
+          // Dine-In: Seat at dining table in Left Room or Right Hall
           this.seatCustomer(cust);
         }
       }
@@ -344,18 +364,22 @@ class SimulationEngine {
   }
 
   seatCustomer(cust) {
-    const table = this.tables.find(t => !t.occupied);
-    if (table) {
+    const availableTables = this.tables.filter(t => !t.occupied);
+    if (availableTables.length > 0) {
+      // Pick an available table (random among available, evenly distributing across Left and Right dining halls)
+      const table = availableTables[Math.floor(this.random() * availableTables.length)];
       table.occupied = true;
       table.custId = cust.id;
       table.releaseTime = this.currentTime + this.sampleDiningTime();
       cust.status = 'SEATED_EATING';
       cust.assigned_table_id = table.id;
       cust.seated_time = this.currentTime;
-      this.emit('SEATED', cust, `Seated at Table #${table.id}`);
+      const roomName = table.id <= 6 ? 'Left Dining Room' : 'Right Dining Hall';
+      this.emit('SEATED', cust, `Seated at Table #${table.id} (${roomName})`);
     } else {
       // Table wait buffer
-      cust.status = 'WAITING_FOOD';
+      cust.status = 'WAITING_TABLE';
+      this.emit('WAITING_TABLE', cust, 'Waiting for an available dining table');
     }
   }
 
@@ -372,6 +396,14 @@ class SimulationEngine {
         }
       }
     });
+
+    // Check if any patrons waiting for tables can now be seated
+    const waitingCusts = Array.from(this.activeOrders.values()).filter(c => c.status === 'WAITING_TABLE');
+    for (const waitingCust of waitingCusts) {
+      const avail = this.tables.find(t => !t.occupied);
+      if (!avail) break;
+      this.seatCustomer(waitingCust);
+    }
   }
 
   getTotalQueueLength() {
